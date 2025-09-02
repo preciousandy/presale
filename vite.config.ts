@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
-const NGROK_HOST = '8f3563cbe75e.ngrok-free.app';
+const NGROK_HOST = 'abc74ba92c1b.ngrok-free.app';
 
 // https://vitejs.dev/config/
 export default defineConfig({
