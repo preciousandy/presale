@@ -10,7 +10,7 @@ import './web3modal-styles.css';
 
 import HydroLogo from './assets/logo.png';
 
-//const API_BASE_URL = "http://localhost:8000/api";
+const API_BASE_URL = "http://localhost:8000/api";
 
 interface TelegramUser {
     id: number;
@@ -206,7 +206,7 @@ function AppContent() {
 function App() {
     return (
         
-        <TonConnectUIProvider manifestUrl="https://8f3563cbe75e.ngrok-free.app/tonconnect-manifest.json">
+        <TonConnectUIProvider manifestUrl="/tonconnect-manifest.json">
             <AppContent />
         </TonConnectUIProvider>
     );
