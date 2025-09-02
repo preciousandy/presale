@@ -10,7 +10,7 @@ import './web3modal-styles.css';
 
 import HydroLogo from './assets/logo.png';
 
-const API_BASE_URL = "http://localhost:8000/api";
+//const API_BASE_URL = "http://localhost:8000/api";
 
 interface TelegramUser {
     id: number;
