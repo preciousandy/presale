@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.vite/tsconfig.tsbuildinfo.json",
+
+    "target": "ES2020",         // Or "ESNext" for the latest features
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"], // Or ["ESNext", "DOM", "DOM.Iterable"]
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler", // <--- IMPORTANT: For Vite, 'bundler' is often ideal
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx", // <--- IMPORTANT: For React JSX files
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Additional settings for .jsx imports */
+    "allowJs": true,           // <--- IMPORTANT: Allows TypeScript to process .js and .jsx files
+    "esModuleInterop": true,   // <--- IMPORTANT: Improves interoperability with CommonJS modules
+    // "baseUrl": "./src",     // Optional: If you plan to use absolute imports like '@/components/...'
+    // "paths": {
+    //   "@/*": ["./*"]        // Example alias
+    // }
+  },
+  "include": ["src"], // <--- IMPORTANT: Ensure your source directory is included
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

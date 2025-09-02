@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "jsx": "react-jsx", // Can be here too, but mostly relevant for 'app' tsconfig
+    "allowJs": true, // Ensure this is true
+    "esModuleInterop": true // Ensure this is true
+  },
+  "include": ["vite.config.ts"] // Or other Node.js specific files
+}

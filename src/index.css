@@ -1,0 +1,25 @@
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom gradient background inspired by image_943925.jpg */
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif; /* A modern font like Inter or Poppins would fit */
+  /* This creates a blue-purple gradient */
+  background: linear-gradient(to bottom right, #4a90e2, #a750f0);
+  background-attachment: fixed; /* Ensures gradient covers the whole viewport even if content is short */
+  color: #edf2f7; /* Light text color */
+}
+
+/* Optional: Define some custom utility classes for repeated use */
+.btn-primary {
+  @apply bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out;
+}
+
+.btn-secondary {
+  @apply bg-blue-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out;
+}
+
+

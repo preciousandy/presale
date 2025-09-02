@@ -1,0 +1,30 @@
+/* src/web3modal-styles.css */
+
+/* This targets the main backdrop overlay */
+.web3modal-modal-container {
+    /* Ensure the backdrop covers the whole viewport */
+    position: fixed !important; 
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    
+    /* Set a high z-index to be on top of all other content */
+    z-index: 9999 !important;
+    
+    /* Make sure it's a flex container for centering the modal card */
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    
+   
+    background-color: rgba(0, 0, 0, 0.75) !important;
+  }
+  
+  /* This targets the modal content itself */
+  .web3modal-modal-card {
+    position: relative !important;
+    z-index: 9999 !important;
+    width: 90vw !important; /* Responsive width */
+    max-width: 500px !important; /* Max width for larger screens */
+  }
