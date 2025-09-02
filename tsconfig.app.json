@@ -2,6 +2,7 @@
   "compilerOptions": {
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.vite/tsconfig.tsbuildinfo.json",
+    "typeRoots": ["./node_modules/@types", "./src/types"],
 
     "target": "ES2020",         // Or "ESNext" for the latest features
     "useDefineForClassFields": true,

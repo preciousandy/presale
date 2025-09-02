@@ -36,7 +36,7 @@ function AppContent() {
         minBuy: 0.1,
         maxBuy: 10,
     });
-    const [targetDate, setTargetDate] = useState(Date.now() + (3 * 24 * 60 * 60 * 1000));
+    const [targetDate] = useState(Date.now() + (3 * 24 * 60 * 60 * 1000));
     const [timeLeft, setTimeLeft] = useState<{ [key: string]: number }>({});
 
     // Use the hook to get the connected wallet address. It will be an empty string if not connected.
