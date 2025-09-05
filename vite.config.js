@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
-var NGROK_HOST = 'abc74ba92c1b.ngrok-free.app';
+var NGROK_HOST = '2ff6606d57c5.ngrok-free.app';
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [
@@ -13,7 +13,7 @@ export default defineConfig({
                 global: true,
                 process: true,
             },
-            // You can also include specific modules if needed, though the default is to include all
+           
             include: ['buffer', 'crypto', 'stream', 'util', 'os', 'path', 'querystring', 'http', 'https', 'assert', 'zlib'],
         }),
     ],

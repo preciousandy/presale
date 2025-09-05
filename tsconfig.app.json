@@ -24,13 +24,10 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
-    /* Additional settings for .jsx imports */
-    "allowJs": true,           // <--- IMPORTANT: Allows TypeScript to process .js and .jsx files
-    "esModuleInterop": true,   // <--- IMPORTANT: Improves interoperability with CommonJS modules
-    // "baseUrl": "./src",     // Optional: If you plan to use absolute imports like '@/components/...'
-    // "paths": {
-    //   "@/*": ["./*"]        // Example alias
-    // }
+   
+    "allowJs": true,           
+    "esModuleInterop": true,   
+   
   },
   "include": ["src"], // <--- IMPORTANT: Ensure your source directory is included
   "references": [{ "path": "./tsconfig.node.json" }]

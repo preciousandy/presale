@@ -1,14 +1,39 @@
-import React, { useState, useContext } from 'react';
-import axios from 'axios';
-import { TelegramUserContext } from '../App'; // Assuming you use context
+import React, { useState, useContext, useEffect } from 'react';
+import axios from 'axios'; // Add axios import back in
+import { parseEther } from 'viem';
+import { useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
+import { TelegramUserContext } from '../App';
 
 function PresaleModule({ metrics, connectedWallet, onContributionSuccess, API_BASE_URL }) {
-    const telegramUser = useContext(TelegramUserContext); // Get Telegram user from context
+    const telegramUser = useContext(TelegramUserContext);
     const [amountToContribute, setAmountToContribute] = useState('');
     const [statusMessage, setStatusMessage] = useState('');
     const [loading, setLoading] = useState(false);
 
+    
+    const PRESALE_CONTRACT_ADDRESS = '0x12E220045a26B4Ac2333cEDB715B5f3df982A70B'; 
+
+    // 1. Prepare the transaction using Wagmi's useSendTransaction
+    const { 
+        data: hash, 
+        sendTransactionAsync, 
+        isPending, 
+        error: sendError 
+    } = useSendTransaction();
+
+    // 2. Wait for the transaction to be confirmed
+    const { 
+        data: receipt, 
+        isLoading: isConfirming, 
+        isSuccess: isConfirmed, 
+        error: confirmError 
+    } = useWaitForTransactionReceipt({
+        hash,
+    });
+
+    
     const handleContribute = async () => {
+        // Validation checks
         if (!connectedWallet) {
             setStatusMessage("Please connect your wallet first.");
             return;
@@ -26,60 +51,98 @@ function PresaleModule({ metrics, connectedWallet, onContributionSuccess, API_BA
             return;
         }
 
+        // Check if the address is set
+        if (!PRESALE_CONTRACT_ADDRESS || PRESALE_CONTRACT_ADDRESS.length !== 42) {
+             setStatusMessage("Presale address is not configured correctly.");
+             return;
+        }
+
+        setStatusMessage("Awaiting wallet confirmation...");
         setLoading(true);
-        setStatusMessage("Simulating contribution...");
 
         try {
-            // --- SIMULATED BLOCKCHAIN TRANSACTION ---
-            // In a real app, this is where you'd interact with your presale smart contract
-            // using ethers.js or web3.js to send BNB/SOL/USDT.
-            // await yourPresaleContract.methods.buyTokens().send({ from: connectedWallet, value: amountToContribute });
-            // For now, we call your Laravel API
-            const response = await axios.post(`${API_BASE_URL}/simulate-contribution`, {
-                telegram_user_id: telegramUser.id,
-                wallet_address: connectedWallet,
-                amount: parseFloat(amountToContribute),
+            const value = parseEther(amountToContribute);
+            
+            await sendTransactionAsync({
+                to: PRESALE_CONTRACT_ADDRESS,
+                value: value,
             });
-            setStatusMessage(`Success: ${response.data.message} (Tx: ${response.data.tx_hash})`);
-            setAmountToContribute('');
-            onContributionSuccess(); // Trigger parent to re-fetch presale status
-        } catch (error) {
-            console.error("Contribution error:", error);
-            setStatusMessage(`Error: ${error.response?.data?.message || error.message}`);
-        } finally {
+
+            setStatusMessage("Transaction sent! Waiting for confirmation...");
+        } catch (err) {
+            console.error("Transaction failed:", err);
+            setStatusMessage(`Error: ${err.shortMessage || err.message}`);
             setLoading(false);
         }
     };
+    
+    useEffect(() => {
+        if (isConfirmed && receipt) {
+            setStatusMessage(`Success! Transaction confirmed. Your TX Hash is: ${receipt.transactionHash}`);
+            setLoading(false);
+            onContributionSuccess(); 
+
+            axios.post(`${API_BASE_URL}/record-contribution`, {
+                telegram_user_id: telegramUser.id,
+                wallet_address: connectedWallet,
+                amount: parseFloat(amountToContribute),
+                tx_hash: receipt.transactionHash 
+            }).catch(backendError => {
+                console.error("Failed to record contribution on backend:", backendError);
+            });
+        }
+    }, [isConfirmed, receipt, amountToContribute, connectedWallet, telegramUser, onContributionSuccess, API_BASE_URL]);
+
+    // Handle errors from the send transaction hook
+    useEffect(() => {
+        if (sendError) {
+            setStatusMessage(`Error sending transaction: ${sendError.shortMessage || sendError.message}`);
+            setLoading(false);
+        }
+        if (confirmError) {
+            setStatusMessage(`Error confirming transaction: ${confirmError.message}`);
+            setLoading(false);
+        }
+    }, [sendError, confirmError]);
+
+    // Add a check to prevent rendering with incomplete data, which can also cause errors.
+    if (!metrics) {
+        return <div className="text-center text-gray-400">Loading presale data...</div>;
+    }
 
     const calculatedHDC = amountToContribute ? (parseFloat(amountToContribute) / metrics.tokenPrice).toFixed(2) : '0.00';
-
     const progress = (metrics.totalRaised / metrics.hardCap) * 100;
+
+    const buttonText = isPending || isConfirming
+      ? 'Processing...'
+      : loading
+        ? 'Awaiting Wallet'
+        : 'Contribute Now';
 
     return (
         <div className="space-y-6">
             <h2 className="text-2xl font-bold text-center text-blue-300">Presale Dashboard</h2>
-
-            {/* Metrics Display */}
-            <div className="grid grid-cols-2 gap-4 text-center bg-gray-700 p-4 rounded-lg shadow-inner">
+            
+            {/* ... rest of the component (metrics, progress bar, etc.) remains the same ... */}
+             <div className="grid grid-cols-2 gap-4 text-center bg-gray-700 p-4 rounded-lg shadow-inner">
                 <div>
                     <p className="text-sm text-gray-400">Total Raised</p>
-                    <p className="text-xl font-bold text-green-400">{metrics.totalRaised.toFixed(2)} TON</p>
+                    <p className="text-xl font-bold text-green-400">{metrics.totalRaised.toFixed(2)} BNB</p>
                 </div>
                 <div>
                     <p className="text-sm text-gray-400">Soft Cap / Hard Cap</p>
-                    <p className="text-xl font-bold">{metrics.softCap} / {metrics.hardCap} TON</p>
+                    <p className="text-xl font-bold">{metrics.softCap} / {metrics.hardCap} BNB</p>
                 </div>
                 <div>
                     <p className="text-sm text-gray-400">Current Price</p>
-                    <p className="text-xl font-bold text-yellow-400">1 TON = {1 / metrics.tokenPrice.toFixed(4)} $HDC</p>
+                    <p className="text-xl font-bold text-yellow-400">1 BNB = { (1 / metrics.tokenPrice).toFixed(0)} $HDC</p>
                 </div>
                 <div>
                     <p className="text-sm text-gray-400">Min/Max Buy</p>
-                    <p className="text-xl font-bold">{metrics.minBuy} / {metrics.maxBuy} TON</p>
+                    <p className="text-xl font-bold">{metrics.minBuy} / {metrics.maxBuy} BNB</p>
                 </div>
             </div>
 
-            {/* Progress Bar */}
             <div className="w-full bg-gray-700 rounded-full h-4">
                 <div
                     className="bg-blue-500 h-4 rounded-full"
@@ -88,12 +151,10 @@ function PresaleModule({ metrics, connectedWallet, onContributionSuccess, API_BA
             </div>
             <p className="text-sm text-center text-gray-400">{progress.toFixed(1)}% complete</p>
 
-
-            {/* Token Purchase Module */}
             <div className="bg-gray-700 p-4 rounded-lg shadow-inner space-y-4">
                 <h3 className="text-xl font-semibold text-blue-300">Buy $HDC Tokens</h3>
                 <div className="flex flex-col">
-                    <label htmlFor="amount" className="text-gray-300 text-sm mb-1">Amount (TON/BNB/SOL/USDT)</label>
+                    <label htmlFor="amount" className="text-gray-300 text-sm mb-1">Amount (BNB)</label>
                     <input
                         type="number"
                         id="amount"
@@ -110,10 +171,10 @@ function PresaleModule({ metrics, connectedWallet, onContributionSuccess, API_BA
 
                 <button
                     onClick={handleContribute}
-                    disabled={!connectedWallet || loading || !telegramUser || isNaN(parseFloat(amountToContribute)) || parseFloat(amountToContribute) <= 0}
+                    disabled={!connectedWallet || loading || !telegramUser || isNaN(parseFloat(amountToContribute)) || parseFloat(amountToContribute) <= 0 || isPending || isConfirming}
                     className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {loading ? 'Processing...' : 'Contribute Now'}
+                    {buttonText}
                 </button>
                 {statusMessage && (
                     <p className={`text-sm mt-2 text-center ${statusMessage.startsWith('Error') ? 'text-red-500' : 'text-green-400'}`}>

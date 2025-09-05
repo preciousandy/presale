@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-// Import the provider and hooks from the TON Connect library
-import { TonConnectUIProvider, useTonAddress } from "@tonconnect/ui-react";
+import { WagmiConfig, createConfig, http } from "wagmi";
+import { mainnet, bsc, sepolia } from "wagmi/chains"; 
+import { injected, walletConnect } from "wagmi/connectors";
+import { createWeb3Modal } from "@web3modal/wagmi/react";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'; 
+import { useAccount } from "wagmi"; 
+
 import WalletConnector from "./components/WalletConnector";
 import PresaleModule from "./components/PresaleModule";
 import AirdropClaimer from "./components/AirdropClaimer";
@@ -25,6 +30,39 @@ export const TelegramUserContext = React.createContext<TelegramUser | null>(
   null
 );
 
+const projectId = "5055ddceacd39cd7965a0fad21231b5c";
+
+const metadata = {
+  name: "HydroMine",
+  description: "Web3Modal Example",
+  url: "https://web3modal.com",
+  icons: ["https://web3modal.com/logo.png"],
+};
+
+const chains = [mainnet, bsc, sepolia];
+
+const config = createConfig({
+  chains,
+  transports: {
+    [mainnet.id]: http(),
+    [bsc.id]: http(),
+    [sepolia.id]: http(),
+  },
+  connectors: [
+    injected(),
+    walletConnect({ projectId, showQrModal: false }),
+  ],
+});
+
+createWeb3Modal({
+  wagmiConfig: config,
+  projectId,
+  chains,
+  metadata,
+});
+
+const queryClient = new QueryClient();
+
 function AppContent() {
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
   const [activeTab, setActiveTab] = useState("presale");
@@ -39,7 +77,7 @@ function AppContent() {
   const [targetDate] = useState(Date.now() + 3 * 24 * 60 * 60 * 1000);
   const [timeLeft, setTimeLeft] = useState<{ [key: string]: number }>({});
 
-  const connectedWalletAddress = useTonAddress();
+  const { address: connectedWalletAddress } = useAccount();
 
   const calculateTimeLeft = useCallback(() => {
     const difference = +new Date(targetDate) - +new Date();
@@ -56,6 +94,21 @@ function AppContent() {
     return newTimeLeft;
   }, [targetDate]);
 
+  // NEW: A function to save Telegram user data to the Laravel backend
+  const saveTelegramUser = useCallback(async (user: TelegramUser) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/save-telegram-user`, {
+        id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        username: user.username,
+      });
+      console.log("Telegram user saved to backend:", response.data);
+    } catch (error) {
+      console.error("Error saving Telegram user to backend:", error);
+    }
+  }, []);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft());
@@ -63,22 +116,25 @@ function AppContent() {
     return () => clearInterval(timer);
   }, [calculateTimeLeft]);
 
+  // Modifying the existing useEffect to save the user data
   useEffect(() => {
-    // --- Telegram User Logic (unchanged) ---
     if (window.Telegram && window.Telegram.WebApp) {
       const tg = window.Telegram.WebApp;
       tg.ready();
       tg.expand();
 
       if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        setTelegramUser(tg.initDataUnsafe.user as TelegramUser);
+        const user = tg.initDataUnsafe.user as TelegramUser;
+        setTelegramUser(user);
+        // Call the new function to save the user as soon as the app loads
+        saveTelegramUser(user);
       } else {
         console.warn("Telegram user data not found in initDataUnsafe.");
       }
     } else {
       console.warn("window.Telegram.WebApp is not available.");
     }
-  }, []);
+  }, [saveTelegramUser]);
 
   const fetchPresaleStatus = async () => {
     try {
@@ -92,7 +148,6 @@ function AppContent() {
     }
   };
 
-  // Fetch initial status on component mount
   useEffect(() => {
     fetchPresaleStatus();
   }, []);
@@ -115,10 +170,6 @@ function AppContent() {
   return (
     <TelegramUserContext.Provider value={telegramUser}>
       <div className="min-h-screen flex flex-col items-center p-4 relative overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-20 h-20 bg-purple-500 opacity-20 rounded-full animate-bounce-slow"></div>
-        <div className="absolute bottom-1/3 right-1/4 w-16 h-16 bg-blue-500 opacity-20 rounded-full animate-bounce-slow delay-500"></div>
-        <div className="absolute top-1/2 right-1/3 w-24 h-24 bg-teal-500 opacity-20 rounded-full animate-bounce-slow delay-1000"></div>
-
         <header className="w-full max-w-6xl flex flex-col md:flex-row items-center justify-between py-4 px-6 bg-white bg-opacity-10 rounded-xl shadow-lg mb-8 z-20">
           <div className="flex items-center space-x-3 mb-4 md:mb-0">
             <img src={HydroLogo} alt="Hydro Coin Logo" className="h-10 w-10" />
@@ -144,7 +195,6 @@ function AppContent() {
           </nav>
 
           <div className="flex items-center space-x-4">
-            {/* WalletConnector no longer needs any props */}
             <WalletConnector />
             {telegramUser && (
               <span className="text-sm text-white hidden md:block">
@@ -194,14 +244,12 @@ function AppContent() {
               {activeTab === "presale" && (
                 <PresaleModule
                   metrics={presaleMetrics}
-                  // Pass the address from the hook directly
                   connectedWallet={connectedWalletAddress}
                   onContributionSuccess={fetchPresaleStatus}
                   API_BASE_URL={API_BASE_URL}
                 />
               )}
               {activeTab === "airdrop" && (
-                // Pass the address from the hook directly
                 <AirdropClaimer connectedWallet={connectedWalletAddress} />
               )}
               {activeTab === "tokenomics" && <TokenomicsInfo />}
@@ -214,31 +262,12 @@ function AppContent() {
 }
 
 function App() {
-    const manifestUrl = `${window.location.origin}/tonconnect-manifest.json`;
-  
-    // Debug logging
-    console.log('Current origin:', window.location.origin);
-    console.log('Manifest URL:', manifestUrl);
-    
-    // Test if manifest is accessible
-    useEffect(() => {
-      fetch(manifestUrl)
-        .then(response => {
-          console.log('Manifest fetch response:', response.status, response.statusText);
-          return response.json();
-        })
-        .then(data => {
-          console.log('Manifest data:', data);
-        })
-        .catch(error => {
-          console.error('Manifest fetch error:', error);
-        });
-    }, [manifestUrl]);
-
   return (
-    <TonConnectUIProvider manifestUrl="https://candid-hotteok-8242bf.netlify.app/tonconnect-manifest.json">
-      <AppContent />
-    </TonConnectUIProvider>
+    <WagmiConfig config={config}>
+      <QueryClientProvider client={queryClient}>
+        <AppContent />
+      </QueryClientProvider>
+    </WagmiConfig>
   );
 }
 
